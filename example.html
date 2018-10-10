@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+
+<body>
+    <div id="parent">
+        <div class="child1" id="c">
+            <input type="button" class="child1 1" value="text">
+        </div>
+        <div class="child1">
+
+        </div>
+        <div class="child2"></div>
+        <div class="child1 child2">
+            <div class="child1 1"><input type="text" class="1" value="third-test"></div>
+        </div>
+        <input type="button" value="test2">
+    </div>
+</body>
+<script>
+    (function(){
+        var queryFunc={
+            '#':function(id){
+                var arr = [];
+                arr.push(document.getElementById(id));
+                return arr;
+            },
+            '.':function(className){
+                var elements = document.getElementsByTagName('*');
+                var reg = new RegExp('(^|\\s)'+className+'(\\s|$)');
+                var arr = [];
+                for(var i =0,len=elements.length;i<len;i++){
+                    if(reg.test(elements[i].className)){
+                        arr.push(elements[i]);
+                    }
+                }
+                return arr;
+            },
+            'tag':function(tag){
+                return document.getElementsByTagName(tag);
+            }
+        };
+
+        var filterFunc = {
+            '#':function(element,id){
+                return this.commonFunc(element,function(p){
+                    if(p.id == id){
+                        return true;
+                    }
+                })
+            },
+            '.':function(element,className){
+                var reg = new RegExp('(^|\\s)' + className + '(\\s|$)');
+                return this.commonFunc(element,function(p){
+                    if(reg.test(p.className)){
+                        return true;
+                    }
+                })
+            },
+            'tag': function(element,tag){
+                return this.commonFunc(element,function(p){
+                    if(p.tagName.toLowerCase() == tag){
+                        return true;
+                    }
+                })
+            },
+            commonFunc:function(element,callback){
+                var p = element;
+                var end = false;
+                while(!end){
+                    p = p.parentNode || p.parentElement||null;
+                    if(!p) return false;
+                    var b = callback && callback(p);
+                    if(b) return b;
+                    if(p.tagName =='BODY'){
+                        end = true;
+                    }
+                }
+                return false;
+            }
+        };
+
+        var getKV = function(str){
+            if(!str || typeof str!='string') return null;
+            var k = str.substring(0,1);
+            var v = str;
+            if(k=='.' || k=='#'){
+                v = str.substring(1,str.length);
+            }
+            else{
+                k='tag';
+            }
+            return{
+                k:k,
+                v:v
+            }
+        }
+
+        var query = function(str){
+            var kv = getKV(str);
+            return (queryFunc[kv.k] && queryFunc[kv.k](kv.v));
+
+        }
+
+        var filter = function(element,string){
+            var kv = getKV(string);
+            return (filterFunc[kv.k] && filterFunc[kv.k](element,kv.v));
+        }
+
+        var explodeSelector = function(str){
+            if(!str) return [];
+            str = str.replace(/\s+/g,' ');
+            var array = str.split(' ');
+            return array;
+        }
+
+        var queryAll =function(str){
+            var arrSelector = explodeSelector(str);
+            var len = arrSelector.length;
+
+            var index = len - 2;
+            var curDom = null;
+            var curSelector = null;
+
+            var elements = query(arrSelector[len-1]);
+
+            if(len == 1) return elements;
+
+            while(index!=-1){
+                curSelector = arrSelector[index];
+                var tempArr = [];
+                for(var i =0,len = elements.length;i<len;i++){
+                    var tempElement = elements[i];
+                    if(filter(tempElement,curSelector)){
+                        tempArr.push(tempElement);
+                    }
+                }
+                elements = tempArr;
+                index--;
+            }
+            return elements;
+        }
+        window.queryAll = queryAll;
+    })();
+
+    var selector = [
+        'div',
+        'div input',
+        '#parent',
+        '#parent .child1',
+        '#parent .child2',
+        '.child1 .child1.1',
+        '#c .child1.1',
+        '#parent .child1 .child1.1 input'
+    ];
+
+    for(var i in selector){
+        console.log(selector[i]+ "--" + queryAll(selector[i]));
+        var s = '';
+    }
+</script>
+</html>
